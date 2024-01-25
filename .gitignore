@@ -1,0 +1,9 @@
+.vscode/settings.json
+.env
+config.yml
+pictures/
+pictures.json
+lelexou.db
+__pycache__/sql.cpython-39.pyc
+__pycache__/utils.cpython-39.pyc
+lelexou.log
