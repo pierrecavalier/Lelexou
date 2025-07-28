@@ -7,6 +7,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import openai
 import yaml
+import json
 from sql import *
 from utils import *
 import logging
@@ -58,6 +59,9 @@ async def on_message(message):
         proba *= 0.2
     '''
 
+    if message.author.id == 270671747185901588 and ("quoi" in message.content.lower() or "koi" in message.content.lower()):
+        await message.channel.send("en vrai feur je pense")
+
     if  proba < 0.02:
         sentence = random.choice(RANDOM_SENTENCES)
         if type(sentence) == list:
@@ -91,6 +95,47 @@ async def chat(interaction: discord.Interaction, demande: str):
     for part in parts:
         await interaction.followup.send(part)
 
+@bot.tree.command(name="constitution",description="Les 14 piliers de la démocratie paienne")
+@app_commands.describe(nom="Qui doit se taire ?")
+@app_commands.choices(choix=[
+    discord.app_commands.Choice(name="Tout les articles", value=1),
+    discord.app_commands.Choice(name="Un article, aléatoire si 0", value=0),
+])
+
+async def constitution(interaction: discord.Interaction, choix: discord.app_commands.Choice[str], numero: int = 0):
+    with open('data/constitution.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    articles = data['articles']
+    full = "\n".join([f"Article {i+1}: {article['texte']}" for i, article in enumerate(articles)])
+
+    response = "Hum, ça a cloché quelque part"
+    if choix.value == 1:
+        response = full
+
+    elif choix.value == 0:
+        if numero == -1:
+            response = "Un pour tous et tout pour moi !"
+
+        elif numero >= 0 and numero < len(data['articles']):
+            numerobis = numero
+            if numerobis == 0:
+                numerobis = random.randint(1, len(data['articles']))
+
+            response = data['articles'][numerobis - 1]
+
+        elif numero >= len(data['articles']):
+            demande = "en t'inspirant de la consitution de pai suivante: '" + full + "'créer l'article " + str(numero) + " de la constitution paienne sous la même forme que les autres articles"
+            responses=openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": demande.strip()}
+            ]
+            )
+            if not isinstance(responses, dict):
+                raise TypeError("Expected a dictionary")
+            response = str(responses["choices"][0]["message"]["content"])
+    
+    await interaction.response.send_message(response)
 
 @bot.tree.command(name="cam", description="Je met ma cam (des fois je me trompe malheureusement)")
 async def cam(interaction: discord.Interaction):    
@@ -163,7 +208,7 @@ async def tg(interaction: discord.Interaction, nom: discord.app_commands.Choice[
         
         else:
             await interaction.response.send_message(
-                f"Tais-yoi {calomnied.mention}"
+                f"Tais-toi {calomnied.mention}"
             )
 
 
@@ -174,17 +219,16 @@ async def tg(interaction: discord.Interaction, nom: discord.app_commands.Choice[
     discord.app_commands.Choice(name="Projet Secret", value="Projet Secret")
 ])
 async def delay(interaction: discord.Interaction, arc: discord.app_commands.Choice[str],):
+    now = datetime.now()
 
     if arc.name == "Jeajeanne":
-        now = datetime.now()
         start = datetime(2023, 11, 6, 0, 34, 0)
         delta = now - start
         timeString = format_remaining_time(delta.total_seconds())
         string = f"L'arc Jeajeanne a démarré depuis {timeString} 👀"
         await interaction.response.send_message(string)
 
-    else:
-        now = datetime.now()
+    elif arc.name == "Projet Secret":
         end = datetime(2024, 5, 8, 22, 0, 0)
         lelexou = None
         if isinstance(interaction.channel, (discord.TextChannel, discord.VoiceChannel)):
@@ -209,7 +253,7 @@ async def delay(interaction: discord.Interaction, arc: discord.app_commands.Choi
                     await interaction.response.send_message("Comment tu vas beau brun 👀 ?")
                     return
                 
-                await interaction.response.send_message("Le temps est écoulé malheureusement...")
+                await interaction.response.send_message("Le temps est écoulé malheureusement... Mais il n'est jamais trop tard !")
 
     
 @bot.tree.command(name="clear")
